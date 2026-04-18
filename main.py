@@ -4,11 +4,24 @@ import random
 
 pygame.init()
 
-WIDTH, HEIGHT = 800, 600
+WIDTH, HEIGHT = 1200, 800
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Undead Override")
 
 clock = pygame.time.Clock()
+
+# ===== LOAD ASSETS =====
+bg_img = pygame.image.load("assets/bg.png")
+bg_img = pygame.transform.scale(bg_img, (WIDTH, HEIGHT))
+
+player_img = pygame.image.load("assets/player.png")
+player_img = pygame.transform.scale(player_img, (52,52))
+
+zombie_img = pygame.image.load("assets/zombie.png")
+zombie_img = pygame.transform.scale(zombie_img, (46, 46))
+
+bullet_img = pygame.image.load("assets/bullet.png")
+bullet_img = pygame.transform.scale(bullet_img, (14, 14))
 
 # ===== SETUP =====
 player_pos = [400, 300]
@@ -48,7 +61,7 @@ def spawn_zombie():
 # ===== GAME LOOP =====
 while True:
 
-    # ===== INPUT =====
+    # INPUT
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
@@ -71,10 +84,9 @@ while True:
         bullets.append([player_pos[0], player_pos[1], dx, dy])
         shoot_cooldown = 15
 
-    # ===== UPDATE =====
+    # UPDATE
     if not game_over:
 
-        # COOLDOWNS (must run every frame)
         if shoot_cooldown > 0:
             shoot_cooldown -= 1
 
@@ -101,17 +113,16 @@ while True:
         player_pos[0] += dx * player_speed
         player_pos[1] += dy * player_speed
 
-        # KEEP PLAYER IN SCREEN
         player_pos[0] = max(0, min(player_pos[0], WIDTH))
         player_pos[1] = max(0, min(player_pos[1], HEIGHT))
 
-        # SPAWN ZOMBIES
+        # SPAWN
         spawn_timer += 1
         if spawn_timer > 60:
             spawn_zombie()
             spawn_timer = 0
 
-        # ZOMBIE MOVEMENT + DAMAGE
+        # ZOMBIES
         for zombie in zombies:
             dx = player_pos[0] - zombie[0]
             dy = player_pos[1] - zombie[1]
@@ -122,11 +133,10 @@ while True:
                 dx /= distance
                 dy /= distance
 
-            speed = min(2 + score * 0.05, 6)
+            speed = min(1 + score * 0.02, 6)
             zombie[0] += dx * speed
             zombie[1] += dy * speed
 
-            # DAMAGE CHECK
             px = player_pos[0] - zombie[0]
             py = player_pos[1] - zombie[1]
 
@@ -135,16 +145,12 @@ while True:
                     player_health -= 5
                     damage_cooldown = 20
 
-        # BULLET MOVEMENT
+        # BULLETS
         for bullet in bullets:
             bullet[0] += bullet[2] * 10
             bullet[1] += bullet[3] * 10
 
-        # REMOVE OFF-SCREEN BULLETS
-        bullets = [
-            b for b in bullets
-            if 0 <= b[0] <= WIDTH and 0 <= b[1] <= HEIGHT
-        ]
+        bullets = [b for b in bullets if 0 <= b[0] <= WIDTH and 0 <= b[1] <= HEIGHT]
 
         # COLLISION
         for bullet in bullets[:]:
@@ -158,21 +164,19 @@ while True:
                     score += 1
                     break
 
-        # GAME OVER CHECK
         if player_health <= 0:
             game_over = True
 
-    # ===== RENDER =====
-    screen.fill((20, 20, 20))
+    # RENDER
+    screen.blit(bg_img, (0, 0))
 
-    color = (255, 0, 0) if damage_cooldown > 0 else (0, 255, 0)
-    pygame.draw.circle(screen, color, player_pos, 15)
+    screen.blit(player_img, (player_pos[0] - 16, player_pos[1] - 16))
 
     for bullet in bullets:
-        pygame.draw.circle(screen, (255, 255, 0), (int(bullet[0]), int(bullet[1])), 5)
+        screen.blit(bullet_img, (int(bullet[0]) - 5, int(bullet[1]) - 5))
 
     for zombie in zombies:
-        pygame.draw.circle(screen, (255, 0, 0), (int(zombie[0]), int(zombie[1])), 15)
+        screen.blit(zombie_img, (int(zombie[0]) - 16, int(zombie[1]) - 16))
 
     # UI
     score_text = font.render(f"Score: {score}", True, (255, 255, 255))
@@ -182,8 +186,8 @@ while True:
     screen.blit(health_text, (10, 40))
 
     if game_over:
-        game_over_text = font.render("GAME OVER - Press R to Restart", True, (255, 0, 0))
-        screen.blit(game_over_text, (WIDTH//2 - 200, HEIGHT//2))
+        text = font.render("GAME OVER - Press R", True, (255, 0, 0))
+        screen.blit(text, (WIDTH//2 - 150, HEIGHT//2))
 
         if keys[pygame.K_r]:
             player_pos = [400, 300]
